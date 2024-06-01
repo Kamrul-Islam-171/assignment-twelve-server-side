@@ -29,6 +29,27 @@ const client = new MongoClient(uri, {
   }
 });
 
+const verifyToken = (req, res, next) => {
+  console.log('inside = ', req.headers.authorization);
+  if (!req.headers.authorization) {
+
+
+    return res.status(401).send({ message: 'Forbidden-Access' })
+  }
+  const token = req.headers.authorization.split(' ')[1];
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+    if (err) {
+      
+      return res.status(401).send({ message: 'Forbidden-Access' });
+    }
+    req.decoded = decoded;
+
+    next();
+  });
+
+}
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -38,16 +59,30 @@ async function run() {
     const userCollection = client.db('Asset-Flow').collection('users');
     const hrCollection = client.db('Asset-Flow').collection('HR');
 
-
-    app.put('/user', async(req, res) => {
+    app.post('/jwt', async (req, res) => {
       const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '8h' });
+      res.send({ token })
+    })
+
+
+    app.put('/user', async (req, res) => {
+      const user = req.body;
+      const query = { email: user?.email };
+      const findUser = await userCollection.findOne(query);
+      if (findUser) return;
       // console.log(user)
       const result = await userCollection.insertOne(user);
       res.send(result);
     })
-    app.post('/hr', async(req, res) => {
+    app.post('/hr', async (req, res) => {
       const user = req.body;
       const result = await hrCollection.insertOne(user);
+      res.send(result);
+    })
+
+    app.get('/users', verifyToken, async (req, res) => {
+      const result = await userCollection.find().toArray();
       res.send(result);
     })
 
