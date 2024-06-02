@@ -98,12 +98,26 @@ async function run() {
     })
 
     app.get('/assets', async (req, res) => {
-      const queryData = req.query;
-      // console.log(queryData);
-      const query = {
-        ProductName: new RegExp(queryData.search, 'i')
+      const { search, returnOrNot, sortData } = req.query;
+      const query = {};
+      // console.log('sort=', sortData)
+
+      if (search) {
+        query.ProductName = new RegExp(search, 'i');
       }
-      const result = await assetsCollection.find(query).toArray();
+      if (returnOrNot) {
+        query.ProductType = returnOrNot;
+      }
+      const options = {
+        sort : {
+          Quantity : sortData === 'asc' ? 1 : -1
+        }
+      }
+      
+
+
+
+      const result = await assetsCollection.find(query, options).toArray();
       res.send(result);
     })
 
