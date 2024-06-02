@@ -91,6 +91,41 @@ async function run() {
       res.send(result);
     })
 
+    app.get('/assetsCount', async (req, res) => {
+      const { search, returnOrNot, sortData, available } = req.query;
+
+      const query = {};
+      if (search) {
+
+        query.ProductName = new RegExp(search, 'i');
+      }
+      if (returnOrNot) {
+        query.ProductType = returnOrNot;
+      }
+      if (available) {
+        if (available === 'available') {
+          query.Quantity = { $gt: 0 }
+        }
+        else {
+          query.Quantity = { $lt: 1 }
+        }
+      }
+      const options = {
+        sort: {
+          Quantity: sortData === 'asc' ? 1 : -1
+        }
+      }
+      try {
+
+        const result = await assetsCollection.countDocuments(query, options);
+
+        res.send({ count: result });
+      } catch (error) {
+        console.error('Error getting document count', error);
+        res.status(500).send('Error getting document count');
+      }
+    })
+
     app.post('/asset', async (req, res) => {
       const product = req.body;
       const result = await assetsCollection.insertOne(product);
@@ -98,9 +133,11 @@ async function run() {
     })
 
     app.get('/assets', async (req, res) => {
-      const { search, returnOrNot, sortData } = req.query;
+      const { search, returnOrNot, sortData, available, limit = 4, page = 1 } = req.query;
+      const skip = (page - 1) * limit;
       const query = {};
-      // console.log('sort=', sortData)
+      // console.log(page)
+      // console.log('sort=', available)
 
       if (search) {
         query.ProductName = new RegExp(search, 'i');
@@ -108,16 +145,24 @@ async function run() {
       if (returnOrNot) {
         query.ProductType = returnOrNot;
       }
-      const options = {
-        sort : {
-          Quantity : sortData === 'asc' ? 1 : -1
+      if (available) {
+        if (available === 'available') {
+          query.Quantity = { $gt: 0 }
+        }
+        else {
+          query.Quantity = { $lt: 1 }
         }
       }
-      
+      const options = {
+        sort: {
+          Quantity: sortData === 'asc' ? 1 : -1
+        }
+      }
 
 
 
-      const result = await assetsCollection.find(query, options).toArray();
+
+      const result = await assetsCollection.find(query, options).skip(Number(skip)).limit(Number(limit)).toArray();
       res.send(result);
     })
 
