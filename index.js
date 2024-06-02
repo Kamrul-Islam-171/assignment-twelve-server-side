@@ -30,7 +30,7 @@ const client = new MongoClient(uri, {
 });
 
 const verifyToken = (req, res, next) => {
-  console.log('inside = ', req.headers.authorization);
+  // console.log('inside = ', req.headers.authorization);
   if (!req.headers.authorization) {
 
 
@@ -40,7 +40,7 @@ const verifyToken = (req, res, next) => {
 
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
     if (err) {
-      
+
       return res.status(401).send({ message: 'Forbidden-Access' });
     }
     req.decoded = decoded;
@@ -58,6 +58,7 @@ async function run() {
 
     const userCollection = client.db('Asset-Flow').collection('users');
     const hrCollection = client.db('Asset-Flow').collection('HR');
+    const assetsCollection = client.db('Asset-Flow').collection('assets');
 
     app.post('/jwt', async (req, res) => {
       const user = req.body;
@@ -81,8 +82,28 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/users', verifyToken, async (req, res) => {
-      const result = await userCollection.find().toArray();
+    app.get('/user/:email', verifyToken, async (req, res) => {
+      const email = req.params.email;
+      // console.log(email);
+      const query = { email };
+      const result = await userCollection.findOne(query);
+      // console.log(result)
+      res.send(result);
+    })
+
+    app.post('/asset', async (req, res) => {
+      const product = req.body;
+      const result = await assetsCollection.insertOne(product);
+      res.send(result);
+    })
+
+    app.get('/assets', async (req, res) => {
+      const queryData = req.query;
+      // console.log(queryData);
+      const query = {
+        ProductName: new RegExp(queryData.search, 'i')
+      }
+      const result = await assetsCollection.find(query).toArray();
       res.send(result);
     })
 
