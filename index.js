@@ -17,7 +17,7 @@ app.use(cors({
 
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.insvee7.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -179,7 +179,7 @@ async function run() {
 
     app.get('/assets/:email', async (req, res) => {
       const email = req.params.email;
-      const { search, returnOrNot, sortData, available, limit = 4, page = 1 } = req.query;
+      const { search, returnOrNot, sortData, available, limit = 10, page = 1 } = req.query;
       const skip = (page - 1) * limit;
       const query = {};
 
@@ -222,7 +222,7 @@ async function run() {
       const hr = await EmployeeUnderHrCollection.findOne({email});
       // console.log(hr.HRemail)
 
-      const { search, returnOrNot, sortData, available, limit = 4, page = 1 } = req.query;
+      const { search, returnOrNot, sortData, available, limit = 10, page = 1 } = req.query;
       const skip = (page - 1) * limit;
       const query = {};
 
@@ -254,6 +254,13 @@ async function run() {
 
 
       const result = await assetsCollection.find(query, options).skip(Number(skip)).limit(Number(limit)).toArray();
+      res.send(result);
+    })
+
+    app.delete('/assetDelete/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = {_id : new ObjectId(id)};
+      const result = await assetsCollection.deleteOne(query);
       res.send(result);
     })
 
