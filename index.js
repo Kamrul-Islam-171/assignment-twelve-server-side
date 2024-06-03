@@ -133,7 +133,7 @@ async function run() {
     //employee
     app.get('/assetsCountForEmployee/:email', async (req, res) => {
       const email = req.params.email;
-      const hr = await EmployeeUnderHrCollection.findOne({email});
+      const hr = await EmployeeUnderHrCollection.findOne({ email });
       // console.log(hr.HRemail)
       const { search, returnOrNot, sortData, available } = req.query;
 
@@ -219,7 +219,7 @@ async function run() {
       const email = req.params.email;
 
 
-      const hr = await EmployeeUnderHrCollection.findOne({email});
+      const hr = await EmployeeUnderHrCollection.findOne({ email });
       // console.log(hr.HRemail)
 
       const { search, returnOrNot, sortData, available, limit = 10, page = 1 } = req.query;
@@ -257,11 +257,34 @@ async function run() {
       res.send(result);
     })
 
-    app.delete('/assetDelete/:id', async(req, res) => {
+    app.delete('/assetDelete/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {_id : new ObjectId(id)};
+      const query = { _id: new ObjectId(id) };
       const result = await assetsCollection.deleteOne(query);
       res.send(result);
+    })
+
+    app.get('/asset/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await assetsCollection.findOne(query);
+      res.send(result);
+    })
+
+    app.patch('/update-asset/:id', async(req, res) => {
+      const id = req.params.id;
+      const assetInfo = req.body;
+      const filter = {_id : new ObjectId(id)};
+      const doc = {
+        $set : {
+          ProductName : assetInfo?.ProductName,
+          ProductType : assetInfo?.ProductType,
+          Quantity : assetInfo?.Quantity
+        }
+      }
+      const result = await assetsCollection.updateOne(filter, doc);
+      res.send(result)
+     
     })
 
 
