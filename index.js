@@ -60,6 +60,7 @@ async function run() {
     const hrCollection = client.db('Asset-Flow').collection('HR');
     const assetsCollection = client.db('Asset-Flow').collection('assets');
     const EmployeeUnderHrCollection = client.db('Asset-Flow').collection('EmployeeUnderHr');
+    const requestCollection = client.db('Asset-Flow').collection('RequestAssets');
 
     app.post('/jwt', async (req, res) => {
       const user = req.body;
@@ -271,20 +272,50 @@ async function run() {
       res.send(result);
     })
 
-    app.patch('/update-asset/:id', async(req, res) => {
+    app.patch('/update-asset/:id', async (req, res) => {
       const id = req.params.id;
       const assetInfo = req.body;
-      const filter = {_id : new ObjectId(id)};
+      const filter = { _id: new ObjectId(id) };
       const doc = {
-        $set : {
-          ProductName : assetInfo?.ProductName,
-          ProductType : assetInfo?.ProductType,
-          Quantity : assetInfo?.Quantity
+        $set: {
+          ProductName: assetInfo?.ProductName,
+          ProductType: assetInfo?.ProductType,
+          Quantity: assetInfo?.Quantity
         }
       }
       const result = await assetsCollection.updateOne(filter, doc);
       res.send(result)
-     
+
+    })
+
+    app.post('/asset-request', async (req, res) => {
+      const reqInfo = req.body;
+
+      const result = await requestCollection.insertOne(reqInfo);
+      res.send(result)
+    })
+
+    app.get('/my-pending-request/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { email, Request:'pending' };
+      const result = await requestCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    app.get('/monthly-request/:email', async (req, res) => {
+      const email = req.params.email;
+      const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+      const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59, 999);
+      // console.log(startOfMonth, endOfMonth)
+      const query = {
+        email,
+        RequestDate: {
+          $gte: startOfMonth.toISOString(),
+          $lte: endOfMonth.toISOString(),
+        },
+      };
+      const result = await requestCollection.find(query).toArray();
+      res.send(result);
     })
 
 
