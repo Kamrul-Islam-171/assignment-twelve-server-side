@@ -172,6 +172,46 @@ async function run() {
       }
     })
 
+    app.get('/my-all-requested-assets-count/:email', async (req, res) => {
+      const email = req.params.email;
+      // console.log('email = ', email)
+      const { search, returnOrNot, sortData, available } = req.query;
+
+      const query = {};
+      if (email) {
+        query.email = email;
+      }
+      if (search) {
+
+        query.ProductName = new RegExp(search, 'i');
+      }
+      if (returnOrNot) {
+        query.ProductType = returnOrNot;
+      }
+      if (available) {
+        query.Request=available;
+        // if (available === 'available') {
+        //   query.Quantity = { $gt: 0 }
+        // }
+        // else {
+        //   query.Quantity = { $lt: 1 }
+        // }
+      }
+      const options = {
+        sort: {
+          Quantity: sortData === 'asc' ? 1 : -1
+        }
+      }
+      try {
+
+        const result = await requestCollection.countDocuments(query, options);
+
+        res.send({ count: result });
+      } catch (error) {
+        res.status(500).send('Error getting document count');
+      }
+    })
+
     app.post('/asset', async (req, res) => {
       const product = req.body;
       const result = await assetsCollection.insertOne(product);
@@ -216,6 +256,8 @@ async function run() {
     })
 
     //employee
+
+
     app.get('/assetsForEmployee/:email', async (req, res) => {
       const email = req.params.email;
 
@@ -251,10 +293,49 @@ async function run() {
         }
       }
 
-
-
-
       const result = await assetsCollection.find(query, options).skip(Number(skip)).limit(Number(limit)).toArray();
+      res.send(result);
+    })
+
+    app.get('/my-all-requested-assets/:email', async (req, res) => {
+      const email = req.params.email;
+
+
+      // const hr = await EmployeeUnderHrCollection.findOne({ email });
+      // console.log(hr.HRemail)
+
+      const { search, returnOrNot, sortData, available, limit = 10, page = 1 } = req.query;
+      const skip = (page - 1) * limit;
+      const query = {};
+
+      // console.log(available)
+
+      if (email) {
+        query.email = email
+      }
+
+      if (search) {
+        query.ProductName = new RegExp(search, 'i');
+      }
+      if (returnOrNot) {
+        query.ProductType = returnOrNot;
+      }
+      if (available) {
+        query.Request=available;
+        // if (available === 'available') {
+        //   query.Quantity = { $gt: 0 }
+        // }
+        // else {
+        //   query.Quantity = { $lt: 1 }
+        // }
+      }
+      const options = {
+        sort: {
+          Quantity: sortData === 'asc' ? 1 : -1
+        }
+      }
+
+      const result = await requestCollection.find(query, options).skip(Number(skip)).limit(Number(limit)).toArray();
       res.send(result);
     })
 
@@ -297,7 +378,7 @@ async function run() {
 
     app.get('/my-pending-request/:email', async (req, res) => {
       const email = req.params.email;
-      const query = { email, Request:'pending' };
+      const query = { email, Request: 'pending' };
       const result = await requestCollection.find(query).toArray();
       res.send(result);
     })
