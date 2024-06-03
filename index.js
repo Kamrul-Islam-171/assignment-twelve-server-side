@@ -59,6 +59,7 @@ async function run() {
     const userCollection = client.db('Asset-Flow').collection('users');
     const hrCollection = client.db('Asset-Flow').collection('HR');
     const assetsCollection = client.db('Asset-Flow').collection('assets');
+    const EmployeeUnderHrCollection = client.db('Asset-Flow').collection('EmployeeUnderHr');
 
     app.post('/jwt', async (req, res) => {
       const user = req.body;
@@ -91,10 +92,14 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/assetsCount', async (req, res) => {
+    app.get('/assetsCount/:email', async (req, res) => {
+      const email = req.params.email;
       const { search, returnOrNot, sortData, available } = req.query;
 
       const query = {};
+      if (email) {
+        query.email = email;
+      }
       if (search) {
 
         query.ProductName = new RegExp(search, 'i');
@@ -121,7 +126,47 @@ async function run() {
 
         res.send({ count: result });
       } catch (error) {
-        console.error('Error getting document count', error);
+        res.status(500).send('Error getting document count');
+      }
+    })
+
+    //employee
+    app.get('/assetsCountForEmployee/:email', async (req, res) => {
+      const email = req.params.email;
+      const hr = await EmployeeUnderHrCollection.findOne({email});
+      // console.log(hr.HRemail)
+      const { search, returnOrNot, sortData, available } = req.query;
+
+      const query = {};
+      if (hr?.HRemail) {
+        query.email = hr.HRemail
+      }
+      if (search) {
+
+        query.ProductName = new RegExp(search, 'i');
+      }
+      if (returnOrNot) {
+        query.ProductType = returnOrNot;
+      }
+      if (available) {
+        if (available === 'available') {
+          query.Quantity = { $gt: 0 }
+        }
+        else {
+          query.Quantity = { $lt: 1 }
+        }
+      }
+      const options = {
+        sort: {
+          Quantity: sortData === 'asc' ? 1 : -1
+        }
+      }
+      try {
+
+        const result = await assetsCollection.countDocuments(query, options);
+
+        res.send({ count: result });
+      } catch (error) {
         res.status(500).send('Error getting document count');
       }
     })
@@ -132,12 +177,58 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/assets', async (req, res) => {
+    app.get('/assets/:email', async (req, res) => {
+      const email = req.params.email;
       const { search, returnOrNot, sortData, available, limit = 4, page = 1 } = req.query;
       const skip = (page - 1) * limit;
       const query = {};
-      // console.log(page)
-      // console.log('sort=', available)
+
+      if (email) {
+        query.email = email
+      }
+
+      if (search) {
+        query.ProductName = new RegExp(search, 'i');
+      }
+      if (returnOrNot) {
+        query.ProductType = returnOrNot;
+      }
+      if (available) {
+        if (available === 'available') {
+          query.Quantity = { $gt: 0 }
+        }
+        else {
+          query.Quantity = { $lt: 1 }
+        }
+      }
+      const options = {
+        sort: {
+          Quantity: sortData === 'asc' ? 1 : -1
+        }
+      }
+
+
+
+
+      const result = await assetsCollection.find(query, options).skip(Number(skip)).limit(Number(limit)).toArray();
+      res.send(result);
+    })
+
+    //employee
+    app.get('/assetsForEmployee/:email', async (req, res) => {
+      const email = req.params.email;
+
+
+      const hr = await EmployeeUnderHrCollection.findOne({email});
+      // console.log(hr.HRemail)
+
+      const { search, returnOrNot, sortData, available, limit = 4, page = 1 } = req.query;
+      const skip = (page - 1) * limit;
+      const query = {};
+
+      if (hr?.HRemail) {
+        query.email = hr.HRemail
+      }
 
       if (search) {
         query.ProductName = new RegExp(search, 'i');
