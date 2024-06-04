@@ -151,6 +151,7 @@ async function run() {
           { email: new RegExp(search, 'i') }
         ]
       }
+      query.Request = 'pending'
 
 
       try {
@@ -311,6 +312,7 @@ async function run() {
           { email: new RegExp(search, 'i') }
         ]
       }
+      query.Request = 'pending'
       // console.log(query)
 
       const result = await requestCollection.find(query).skip(Number(skip)).limit(Number(limit)).toArray();
@@ -471,6 +473,35 @@ async function run() {
       const hr = await hrCollection.findOne(filter);
       // console.log(hr)
       res.send(hr);
+    })
+
+    //asset count decrease for hr
+    app.patch('/approval-decrease/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const doc = {
+        $inc: { Quantity: -1 }
+      }
+
+      const result = await assetsCollection.updateOne(query, doc);
+      // console.log(result)
+      res.send(result);
+    })
+
+    //status update of an pending request HR
+    app.patch('/status-update/:id', async (req, res) => {
+      const id = req.params.id;
+      // console.log(id)
+      const query = { _id: new ObjectId(id) };
+      const doc = {
+        $set: {
+          Request: 'approve',
+          ApprovalDate: new Date()
+        }
+      }
+
+      const result = await requestCollection.updateOne(query, doc);
+      res.send(result);
     })
 
 
