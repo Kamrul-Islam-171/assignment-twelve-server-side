@@ -131,6 +131,38 @@ async function run() {
       }
     })
 
+    //request count
+
+    app.get('/all-requested-asset-count/:email', async (req, res) => {
+      const email = req.params.email;
+      const { search } = req.query;
+
+      const query = {};
+      if (email) {
+        query.HrEmail = email;
+      }
+      // if (search) {
+
+      //   query.ProductName = new RegExp(search, 'i');
+      // }
+      if (search) {
+        query.$or = [
+          { RName: new RegExp(search, 'i') },
+          { email: new RegExp(search, 'i') }
+        ]
+      }
+
+
+      try {
+
+        const result = await requestCollection.countDocuments(query);
+
+        res.send({ count: result });
+      } catch (error) {
+        res.status(500).send('Error getting document count');
+      }
+    })
+
     //employee
     app.get('/assetsCountForEmployee/:email', async (req, res) => {
       const email = req.params.email;
@@ -189,7 +221,7 @@ async function run() {
         query.ProductType = returnOrNot;
       }
       if (available) {
-        query.Request=available;
+        query.Request = available;
         // if (available === 'available') {
         //   query.Quantity = { $gt: 0 }
         // }
@@ -252,6 +284,37 @@ async function run() {
 
 
       const result = await assetsCollection.find(query, options).skip(Number(skip)).limit(Number(limit)).toArray();
+      res.send(result);
+    })
+
+    //hr all asset request
+    app.get('/all-asset-request/:email', async (req, res) => {
+      const email = req.params.email;
+      const { search, limit = 10, page = 1 } = req.query;
+      const skip = (page - 1) * limit;
+      const query = {};
+
+      if (email) {
+        query.HrEmail = email
+      }
+      // console.log(search)
+
+
+
+      // if (search) {
+      //   query.RName= new RegExp(search, 'i') 
+
+      // }
+      if (search) {
+        query.$or = [
+          { RName: new RegExp(search, 'i') },
+          { email: new RegExp(search, 'i') }
+        ]
+      }
+      // console.log(query)
+
+      const result = await requestCollection.find(query).skip(Number(skip)).limit(Number(limit)).toArray();
+      // console.log(result)
       res.send(result);
     })
 
@@ -321,7 +384,7 @@ async function run() {
         query.ProductType = returnOrNot;
       }
       if (available) {
-        query.Request=available;
+        query.Request = available;
         // if (available === 'available') {
         //   query.Quantity = { $gt: 0 }
         // }
@@ -399,12 +462,12 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/hr-info/:email', async(req, res) => {
+    app.get('/hr-info/:email', async (req, res) => {
       const email = req.params.email;
-      const query = {email};
+      const query = { email };
       const result = await requestCollection.findOne(query);
       // console.log(result.HrEmail);
-      const filter = {email : result?.HrEmail};
+      const filter = { email: result?.HrEmail };
       const hr = await hrCollection.findOne(filter);
       // console.log(hr)
       res.send(hr);
