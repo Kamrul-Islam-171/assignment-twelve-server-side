@@ -399,6 +399,17 @@ async function run() {
       res.send(result);
     })
 
+    app.get('/hr-info/:email', async(req, res) => {
+      const email = req.params.email;
+      const query = {email};
+      const result = await requestCollection.findOne(query);
+      // console.log(result.HrEmail);
+      const filter = {email : result?.HrEmail};
+      const hr = await hrCollection.findOne(filter);
+      // console.log(hr)
+      res.send(hr);
+    })
+
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
