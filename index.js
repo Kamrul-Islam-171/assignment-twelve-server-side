@@ -505,12 +505,57 @@ async function run() {
     })
 
     //reject asset HR 
-    app.delete('/reject-asset/:id', async(req, res) => {
+    app.delete('/reject-asset/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {_id : new ObjectId(id)};
+      const query = { _id: new ObjectId(id) };
       const result = await requestCollection.deleteOne(query);
       res.send(result);
     })
+
+    //increase request for employee
+    app.patch('/increase-request/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const doc = {
+        $inc: {
+          RequestCount: 1
+        }
+      }
+      const result = await assetsCollection.updateOne(query, doc);
+      res.send(result);
+    })
+
+    //top 4 requested item for hr
+    app.get('/top-four-requested-items/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      // console.log(email)
+      const result = await assetsCollection.find(query).sort({ RequestCount: -1 }).limit(4).toArray();
+      res.send(result)
+    })
+
+    //five pending request for hr
+    app.get('/five-pending-request/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { HrEmail: email };
+      // console.log(email)
+      const result = await requestCollection.find(query).limit(5).toArray();
+      res.send(result)
+    })
+
+    //limited stocks item for hr
+    app.get('/limited-stocks/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = {
+        email: email,
+        Quantity: { $lt: 10 }
+      };
+      // console.log(query)
+      // console.log(email)
+      const result = await assetsCollection.find(query).toArray();
+      res.send(result)
+    })
+
 
 
     await client.db("admin").command({ ping: 1 });
