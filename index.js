@@ -556,6 +556,30 @@ async function run() {
       res.send(result)
     })
 
+    //chart returnable items
+    app.get('/returnable/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = {
+        HrEmail: email,
+        ProductType: 'returnable'
+      };
+      // console.log(query)
+      const result = await requestCollection.countDocuments(query);
+
+      res.send({count : result})
+    })
+
+    //nonreturnabel
+    app.get('/non-returnable/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = {
+        HrEmail: email,
+        ProductType: 'non-returnable'
+      };
+      const result = await requestCollection.countDocuments(query);
+      res.send({count : result})
+    })
+
 
 
     await client.db("admin").command({ ping: 1 });
