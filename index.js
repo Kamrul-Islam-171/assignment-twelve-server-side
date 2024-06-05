@@ -78,6 +78,20 @@ async function run() {
       const result = await userCollection.insertOne(user);
       res.send(result);
     })
+
+
+    app.put('/username-image-update', async (req, res) => {
+      const user = req.body;
+      const query = { email: user?.email };
+      const doc = {
+        $set: {
+          ...user
+        }
+      }
+      const result = await userCollection.updateOne(query, doc);
+      res.send(result);
+    })
+
     app.post('/hr', async (req, res) => {
       const user = req.body;
       const result = await hrCollection.insertOne(user);
@@ -167,13 +181,13 @@ async function run() {
     //employee
     app.get('/assetsCountForEmployee/:email', async (req, res) => {
       const email = req.params.email;
-      const hr = await EmployeeUnderHrCollection.findOne({ email });
+      const hr = await userCollection.findOne({ email });
       // console.log(hr.HRemail)
       const { search, returnOrNot, sortData, available } = req.query;
 
       const query = {};
-      if (hr?.HRemail) {
-        query.email = hr.HRemail
+      if (hr?.HR) {
+        query.email = hr?.HR
       }
       if (search) {
 
@@ -326,16 +340,16 @@ async function run() {
     app.get('/assetsForEmployee/:email', async (req, res) => {
       const email = req.params.email;
 
-
-      const hr = await EmployeeUnderHrCollection.findOne({ email });
+      //TODO
+      const hr = await userCollection.findOne({ email });
       // console.log(hr.HRemail)
 
       const { search, returnOrNot, sortData, available, limit = 10, page = 1 } = req.query;
       const skip = (page - 1) * limit;
       const query = {};
 
-      if (hr?.HRemail) {
-        query.email = hr.HRemail
+      if (hr?.HR) {
+        query.email = hr.HR
       }
 
       if (search) {
@@ -366,8 +380,7 @@ async function run() {
       const email = req.params.email;
 
 
-      // const hr = await EmployeeUnderHrCollection.findOne({ email });
-      // console.log(hr.HRemail)
+
 
       const { search, returnOrNot, sortData, available, limit = 10, page = 1 } = req.query;
       const skip = (page - 1) * limit;
@@ -566,7 +579,7 @@ async function run() {
       // console.log(query)
       const result = await requestCollection.countDocuments(query);
 
-      res.send({count : result})
+      res.send({ count: result })
     })
 
     //nonreturnabel
@@ -577,8 +590,85 @@ async function run() {
         ProductType: 'non-returnable'
       };
       const result = await requestCollection.countDocuments(query);
-      res.send({count : result})
+      res.send({ count: result })
     })
+
+    //pending to be employee under an HR
+    app.get('/pending-employee', async (req, res) => {
+      const query = {
+        status: 'pending',
+        role: 'employee'
+      }
+      const result = await userCollection.find(query).toArray();
+      res.send(result)
+    })
+
+    //package limit
+    app.get('/package-limit/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const result = await userCollection.findOne(query);
+      res.send(result);
+    })
+
+
+    //add selected employee under a hr
+    app.put('/add-selected-employee/:email', async (req, res) => {
+      const email = req.params.email;
+
+      const { selectedEmployee: employeeList, newLimit } = req.body;
+      // const employeeList = ['hello@gmail.com', 'iam@gmail.com'];
+      // console.log(employeeList)
+      const query = { HRemail: email };
+
+      const options = { upsert: true }
+      // console.log(query)
+      const doc = {
+        $push:
+        {
+          MyTeam: { $each: employeeList }
+        }
+      }
+      const result1 = await EmployeeUnderHrCollection.updateOne(query, doc, options);
+
+      //now update all the employe status
+      const HrInfo = await EmployeeUnderHrCollection.findOne({ HRemail: email });
+      const employeeEmails = HrInfo?.MyTeam;
+      const result2 = await userCollection.updateMany(
+        { email: { $in: employeeEmails }, status: 'pending' },
+        { $set: { status: 'verified', HR: email } }
+      )
+
+      //now update the hr limit
+      const updateDoc = {
+        $set: {
+          employeeLimit: newLimit
+        }
+      }
+
+      const result3 = await userCollection.updateOne({email}, updateDoc);
+
+      res.send(result3);
+
+
+    })
+
+    //now update all the employe status
+    // app.patch('/update-employee-status/:email', async (req, res) => {
+    //   const email = req.params.email;
+    //   const HrInfo = await EmployeeUnderHrCollection.findOne({ HRemail: email });
+    //   console.log('hrinfo = ', HrInfo);
+
+    //   const employeeEmails = HrInfo?.MyTeam;
+    //   console.log('employee = ', employeeEmails);
+
+    //   const result = await userCollection.updateMany(
+    //     { email: { $in: employeeEmails }, status: 'pending' },
+    //     { $set: { status: 'verified', HR:email } }
+    //   )
+
+    //   res.send(result);
+    // })
 
 
 
