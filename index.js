@@ -595,11 +595,14 @@ async function run() {
 
     //pending to be employee under an HR
     app.get('/pending-employee', async (req, res) => {
+      const {page=1, limit=10} = req.query;
+      console.log(page, limit);
+      const skip = (page - 1) * limit;
       const query = {
         status: 'pending',
         role: 'employee'
       }
-      const result = await userCollection.find(query).toArray();
+      const result = await userCollection.find(query).skip(Number(skip)).limit(Number(limit)).toArray();
       res.send(result)
     })
 
@@ -653,22 +656,22 @@ async function run() {
 
     })
 
-    //now update all the employe status
-    // app.patch('/update-employee-status/:email', async (req, res) => {
-    //   const email = req.params.email;
-    //   const HrInfo = await EmployeeUnderHrCollection.findOne({ HRemail: email });
-    //   console.log('hrinfo = ', HrInfo);
+    //employee count under an hr
+    app.get('/employee-under-hr/:email', async(req, res) => {
+      const email = req.params.email;
+      const query = {HRemail : email};
+      const result = await EmployeeUnderHrCollection.findOne(query);
+      res.send(result);
+    })
 
-    //   const employeeEmails = HrInfo?.MyTeam;
-    //   console.log('employee = ', employeeEmails);
+    //pendingemployee count 
+    app.get('/pending-employee-count', async(req, res) => {
+      const query = {status : 'pending', role:'employee'}
+      const result = await userCollection.countDocuments(query);
+      res.send({count : result})
+    })
 
-    //   const result = await userCollection.updateMany(
-    //     { email: { $in: employeeEmails }, status: 'pending' },
-    //     { $set: { status: 'verified', HR:email } }
-    //   )
-
-    //   res.send(result);
-    // })
+    
 
 
 
