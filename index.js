@@ -707,6 +707,55 @@ async function run() {
       res.send({ count: result })
     })
 
+    //my-employee-list
+    app.get('/my-employee-list/:email', async (req, res) => {
+      const email = req.params.email;
+      // console.log(email)
+
+      // const result = await EmployeeUnderHrCollection.findOne({HRemail:email});
+      // res.send(result)
+
+
+      const HrInfo = await EmployeeUnderHrCollection.findOne({ HRemail: email });
+      const employeeEmails = HrInfo?.MyTeam;
+     
+      const result2 = await userCollection.find(
+        { email: { $in: employeeEmails } },
+      ).toArray();
+
+      res.send(result2)
+
+
+    })
+
+    //my employee count
+    app.get('/my-employee-count/:email', async(req, res) => {
+      const email = req.params.email;
+      const result = await EmployeeUnderHrCollection.findOne({HRemail : email});
+      res.send(result)
+    })
+
+    //delete from my team
+    app.put('/remove-from-team/:email', async(req, res) => {
+      const email = req.params.email;
+      const {userEmail} = req.body;
+      // console.log(email, userEmail);
+      const result = await EmployeeUnderHrCollection.updateOne(
+        {HRemail:email},
+        {$pull : {MyTeam:userEmail}}
+      )
+
+      const result1 = await userCollection.updateOne(
+        {email : userEmail},
+        {
+          $unset:{HR:''},
+          $set:{status:'pending'}
+        }
+      )
+
+      res.send(result)
+    })
+
 
 
 
