@@ -710,6 +710,9 @@ async function run() {
     //my-employee-list
     app.get('/my-employee-list/:email', async (req, res) => {
       const email = req.params.email;
+      const { page = 1, limit = 10 } = req.query;
+      // console.log(page, limit);
+      const skip = (page - 1) * limit;
       // console.log(email)
 
       // const result = await EmployeeUnderHrCollection.findOne({HRemail:email});
@@ -721,7 +724,7 @@ async function run() {
      
       const result2 = await userCollection.find(
         { email: { $in: employeeEmails } },
-      ).toArray();
+      ).skip(Number(skip)).limit(Number(limit)).toArray();
 
       res.send(result2)
 
@@ -776,6 +779,25 @@ async function run() {
       }
       const result = await userCollection.updateOne(query, doc);
       res.send(result);
+    })
+
+    //myTeam members employee
+    app.get('/my-team-members/:email', async(req, res) => {
+      const email = req.params.email;
+      const {page = 1, limit = 10}  = req.query;
+      const skip = (page - 1) * limit;
+      const {HR} = await userCollection.findOne({email});
+      // console.log(HR);
+      const result = await userCollection.find({HR}).skip(Number(skip)).limit(Number(limit)).toArray();
+      res.send(result) 
+    })
+
+    //myTeam count
+    app.get('/my-team-count/:email', async(req, res) => {
+      const email = req.params.email;
+      const user = await userCollection.findOne({email});
+      const result = await EmployeeUnderHrCollection.findOne({HRemail : user?.HR});
+      res.send(result)
     })
 
 
