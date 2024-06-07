@@ -756,6 +756,28 @@ async function run() {
       res.send(result)
     })
 
+    //get-user-info
+    app.get('/get-user-info/:email', async(req, res) => {
+      const email = req.params.email;
+      const result = await userCollection.findOne({email});
+      res.send(result)
+    })
+
+    //update profile
+    app.put('/profile-update/:email', async(req, res) => {
+      const email = req.params.email;
+      const {name, image} = req.body;
+      const query = {email};
+      const doc = {
+        $set : {
+          name : name,
+          image : image
+        }
+      }
+      const result = await userCollection.updateOne(query, doc);
+      res.send(result);
+    })
+
 
 
 
