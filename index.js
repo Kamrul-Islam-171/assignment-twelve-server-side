@@ -850,6 +850,26 @@ async function run() {
     })
 
 
+    //hrinfo for an employee
+    app.get('/hr-info-for-me/:email', async(req, res) => {
+      const email = req.params.email;
+      console.log(email)
+      const hr = await userCollection.findOne({email});
+      if(!hr?.HR) return;
+      
+      const result = await hrCollection.findOne({email : hr?.HR});
+      res.send(result);
+    })
+
+    //hr-info
+    app.get('/hr-information/:email', async(req, res) => {
+      const email = req.params.email;
+      
+      const result = await hrCollection.findOne({email});
+      res.send(result);
+    })
+
+
 
 
 
