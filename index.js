@@ -2,9 +2,12 @@
 const express = require('express')
 const cors = require('cors');
 const app = express()
+
 const port = process.env.PORT || 5000;
 require('dotenv').config()
 var jwt = require('jsonwebtoken');
+
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 
 
@@ -61,6 +64,7 @@ async function run() {
     const assetsCollection = client.db('Asset-Flow').collection('assets');
     const EmployeeUnderHrCollection = client.db('Asset-Flow').collection('EmployeeUnderHr');
     const requestCollection = client.db('Asset-Flow').collection('RequestAssets');
+    const noticetCollection = client.db('Asset-Flow').collection('Notices');
 
     app.post('/jwt', async (req, res) => {
       const user = req.body;
@@ -98,7 +102,7 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/user/:email', verifyToken, async (req, res) => {
+    app.get('/userRole/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       // console.log(email);
       const query = { email };
@@ -335,6 +339,31 @@ async function run() {
     })
 
     //employee
+
+
+    //payment intend
+    app.post("/create-payment-intent", verifyToken, async (req, res) => {
+      const price = req.body.price;
+      const priceInCent = parseFloat(price) * 100;
+      console.log(priceInCent)
+
+      if (!price || priceInCent < 1) return;
+
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: priceInCent,
+        currency: "usd",
+
+        automatic_payment_methods: {
+          enabled: true,
+        },
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
 
 
     app.get('/assetsForEmployee/:email', async (req, res) => {
@@ -721,7 +750,7 @@ async function run() {
 
       const HrInfo = await EmployeeUnderHrCollection.findOne({ HRemail: email });
       const employeeEmails = HrInfo?.MyTeam;
-     
+
       const result2 = await userCollection.find(
         { email: { $in: employeeEmails } },
       ).skip(Number(skip)).limit(Number(limit)).toArray();
@@ -732,27 +761,27 @@ async function run() {
     })
 
     //my employee count
-    app.get('/my-employee-count/:email', async(req, res) => {
+    app.get('/my-employee-count/:email', async (req, res) => {
       const email = req.params.email;
-      const result = await EmployeeUnderHrCollection.findOne({HRemail : email});
+      const result = await EmployeeUnderHrCollection.findOne({ HRemail: email });
       res.send(result)
     })
 
     //delete from my team
-    app.put('/remove-from-team/:email', async(req, res) => {
+    app.put('/remove-from-team/:email', async (req, res) => {
       const email = req.params.email;
-      const {userEmail} = req.body;
+      const { userEmail } = req.body;
       // console.log(email, userEmail);
       const result = await EmployeeUnderHrCollection.updateOne(
-        {HRemail:email},
-        {$pull : {MyTeam:userEmail}}
+        { HRemail: email },
+        { $pull: { MyTeam: userEmail } }
       )
 
       const result1 = await userCollection.updateOne(
-        {email : userEmail},
+        { email: userEmail },
         {
-          $unset:{HR:''},
-          $set:{status:'pending'}
+          $unset: { HR: '' },
+          $set: { status: 'pending' }
         }
       )
 
@@ -760,21 +789,21 @@ async function run() {
     })
 
     //get-user-info
-    app.get('/get-user-info/:email', async(req, res) => {
+    app.get('/get-user-info/:email', async (req, res) => {
       const email = req.params.email;
-      const result = await userCollection.findOne({email});
+      const result = await userCollection.findOne({ email });
       res.send(result)
     })
 
     //update profile
-    app.put('/profile-update/:email', async(req, res) => {
+    app.put('/profile-update/:email', async (req, res) => {
       const email = req.params.email;
-      const {name, image} = req.body;
-      const query = {email};
+      const { name, image } = req.body;
+      const query = { email };
       const doc = {
-        $set : {
-          name : name,
-          image : image
+        $set: {
+          name: name,
+          image: image
         }
       }
       const result = await userCollection.updateOne(query, doc);
@@ -782,22 +811,42 @@ async function run() {
     })
 
     //myTeam members employee
-    app.get('/my-team-members/:email', async(req, res) => {
+    app.get('/my-team-members/:email', async (req, res) => {
       const email = req.params.email;
-      const {page = 1, limit = 10}  = req.query;
+      const { page = 1, limit = 10 } = req.query;
       const skip = (page - 1) * limit;
-      const {HR} = await userCollection.findOne({email});
+      const { HR } = await userCollection.findOne({ email });
       // console.log(HR);
-      const result = await userCollection.find({HR}).skip(Number(skip)).limit(Number(limit)).toArray();
-      res.send(result) 
+      const result = await userCollection.find({ HR }).skip(Number(skip)).limit(Number(limit)).toArray();
+      res.send(result)
     })
 
     //myTeam count
-    app.get('/my-team-count/:email', async(req, res) => {
+    app.get('/my-team-count/:email', async (req, res) => {
       const email = req.params.email;
-      const user = await userCollection.findOne({email});
-      const result = await EmployeeUnderHrCollection.findOne({HRemail : user?.HR});
+      const user = await userCollection.findOne({ email });
+      const result = await EmployeeUnderHrCollection.findOne({ HRemail: user?.HR });
       res.send(result)
+    })
+
+    //notice employee
+    app.get('/notice', async (req, res) => {
+      const result = await noticetCollection.find().toArray();
+      res.send(result);
+    })
+
+    //limit increase
+    app.patch('/update-limit-count/:email', async (req, res) => {
+      const email = req.params.email;
+      const { incrementLimit } = req.body;
+      const query = { email };
+      const doc = {
+        $inc: {
+          employeeLimit: incrementLimit
+        }
+      }
+      const result = await userCollection.updateOne(query, doc);
+      res.send(result);
     })
 
 
