@@ -78,18 +78,18 @@ async function run() {
       res.send({ token })
     })
 
-    const verifyHR = async(req, res, next) => {
+    const verifyHR = async (req, res, next) => {
       const email = req.decoded.email;
-      const query = {email : email};
+      const query = { email: email };
       const user = await userCollection.findOne(query);
       const isHr = user?.role === 'HR';
-      if(!isHr) {
-        return res.status(403).send({message : 'forbidden-access'})
+      if (!isHr) {
+        return res.status(403).send({ message: 'forbidden-access' })
       }
       next();
     }
 
-    
+
 
     app.put('/user', async (req, res) => {
       const user = req.body;
@@ -573,7 +573,7 @@ async function run() {
     })
 
     //increase request for employee
-    app.patch('/increase-request/:id',  async (req, res) => {
+    app.patch('/increase-request/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const doc = {
@@ -870,75 +870,101 @@ async function run() {
 
 
     //hrinfo for an employee
-    app.get('/hr-info-for-me/:email', verifyToken, async(req, res) => {
+    app.get('/hr-info-for-me/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       // console.log(email)
-      const hr = await userCollection.findOne({email});
-      if(!hr?.HR) return;
-      
-      const result = await hrCollection.findOne({email : hr?.HR});
+      const hr = await userCollection.findOne({ email });
+      if (!hr?.HR) return;
+
+      const result = await hrCollection.findOne({ email: hr?.HR });
       res.send(result);
     })
 
     //hr-info
-    app.get('/hr-information/:email', verifyToken, async(req, res) => {
+    app.get('/hr-information/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
-      
-      const result = await hrCollection.findOne({email});
+
+      const result = await hrCollection.findOne({ email });
       res.send(result);
     })
 
     //user info
-    app.get('/my-info/:email', verifyToken, async(req, res) => {
+    app.get('/my-info/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
-      const result = await userCollection.findOne({email});
+      const result = await userCollection.findOne({ email });
       res.send(result);
     })
 
     //notification
-    app.post('/notification', async(req, res) => {
+    app.post('/notification', async (req, res) => {
       const data = req.body;
       const add = await notificationCollection.insertOne(data);
-      const query = {email : data.email};
-      const options = {upsert : true};
+      const query = { email: data.email };
+      const options = { upsert: true };
       const doc = {
-        $inc : {
-          nCount : 1
+        $inc: {
+          nCount: 1
         }
       }
       const result = await currentNotificationCount.updateOne(query, doc, options);
-      
+
       res.send(result);
     })
 
 
-    app.get('/previous-notification/:email', async(req, res) => {
-      const email= req.params.email;
-      const result = await previousNotificationCount.findOne({email});
+    app.get('/previous-notification/:email', async (req, res) => {
+      const email = req.params.email;
+      const result = await previousNotificationCount.findOne({ email });
       res.send(result);
     })
-    app.get('/current-notification/:email', async(req, res) => {
-      const email= req.params.email;
-      const result = await currentNotificationCount.findOne({email});
-      res.send(result);
-    })
-
-    app.get('/notification-data/:email', async(req, res) => {
-      const email= req.params.email;
-      const result = await notificationCollection.find({email}).sort({ _id: -1 }).toArray();
+    app.get('/current-notification/:email', async (req, res) => {
+      const email = req.params.email;
+      const result = await currentNotificationCount.findOne({ email });
       res.send(result);
     })
 
-    app.put('/update-notification-count', async(req, res) => {
+    app.get('/notification-data/:email', async (req, res) => {
+      const email = req.params.email;
+      const result = await notificationCollection.find({ email }).sort({ _id: -1 }).toArray();
+      res.send(result);
+    })
+
+    app.put('/update-notification-count', async (req, res) => {
       const data = req.body;
       // console.log(data);
-      const query = {email : data.email};
-      const options = {upsert:true};
+      const query = { email: data.email };
+      const options = { upsert: true };
       const doc = {
-        $set : {...data}
+        $set: { ...data }
       }
       const result = await previousNotificationCount.updateOne(query, doc, options);
       res.send(result);
+    })
+
+    app.put('/return-my-asset/:id', verifyToken, async (req, res) => {
+      const id = req.params.id;
+      // console.log(id)
+      const query = { _id: new ObjectId(id) };
+      const doc = {
+        $set: { ReturnStatus: true }
+      }
+      const result = await requestCollection.updateOne(query, doc);
+
+      res.send(result)
+    })
+
+    app.patch('/asset-count-increase-for-return/:id', verifyToken, async (req, res) => {
+      const id = req.params.id;
+      // console.log(id)
+      const query = { _id: new ObjectId(id) };
+      const doc = {
+        $inc: {
+          Quantity: 1
+        }
+      }
+      const result = await assetsCollection.updateOne(query, doc);
+
+      res.send(result)
     })
 
 
