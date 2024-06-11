@@ -53,6 +53,8 @@ const verifyToken = (req, res, next) => {
 
 }
 
+
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -72,6 +74,16 @@ async function run() {
       res.send({ token })
     })
 
+    const verifyHR = async(req, res, next) => {
+      const email = req.decoded.email;
+      const query = {email : email};
+      const user = await userCollection.findOne(query);
+      const isHr = user?.role === 'HR';
+      if(!isHr) {
+        return res.status(403).send({message : 'forbidden-access'})
+      }
+      next();
+    }
 
     app.put('/user', async (req, res) => {
       const user = req.body;
@@ -111,7 +123,7 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/assetsCount/:email', async (req, res) => {
+    app.get('/assetsCount/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const { search, returnOrNot, sortData, available } = req.query;
 
@@ -151,7 +163,7 @@ async function run() {
 
     //request count
 
-    app.get('/all-requested-asset-count/:email', async (req, res) => {
+    app.get('/all-requested-asset-count/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const { search } = req.query;
 
@@ -263,13 +275,13 @@ async function run() {
       }
     })
 
-    app.post('/asset', async (req, res) => {
+    app.post('/asset', verifyToken, verifyHR, async (req, res) => {
       const product = req.body;
       const result = await assetsCollection.insertOne(product);
       res.send(result);
     })
 
-    app.get('/assets/:email', async (req, res) => {
+    app.get('/assets/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const { search, returnOrNot, sortData, available, limit = 10, page = 1 } = req.query;
       const skip = (page - 1) * limit;
@@ -307,7 +319,7 @@ async function run() {
     })
 
     //hr all asset request
-    app.get('/all-asset-request/:email', async (req, res) => {
+    app.get('/all-asset-request/:email', verifyToken, verifyHR, async (req, res) => {
       const email = req.params.email;
       const { search, limit = 10, page = 1 } = req.query;
       const skip = (page - 1) * limit;
@@ -345,7 +357,7 @@ async function run() {
     app.post("/create-payment-intent", verifyToken, async (req, res) => {
       const price = req.body.price;
       const priceInCent = parseFloat(price) * 100;
-      console.log(priceInCent)
+      // console.log(priceInCent)
 
       if (!price || priceInCent < 1) return;
 
@@ -446,7 +458,7 @@ async function run() {
       res.send(result);
     })
 
-    app.delete('/assetDelete/:id', async (req, res) => {
+    app.delete('/assetDelete/:id', verifyToken, verifyHR, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await assetsCollection.deleteOne(query);
@@ -460,7 +472,7 @@ async function run() {
       res.send(result);
     })
 
-    app.patch('/update-asset/:id', async (req, res) => {
+    app.patch('/update-asset/:id', verifyToken, verifyHR, async (req, res) => {
       const id = req.params.id;
       const assetInfo = req.body;
       const filter = { _id: new ObjectId(id) };
@@ -518,7 +530,7 @@ async function run() {
     })
 
     //asset count decrease for hr
-    app.patch('/approval-decrease/:id', async (req, res) => {
+    app.patch('/approval-decrease/:id', verifyToken, verifyHR, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const doc = {
@@ -531,7 +543,7 @@ async function run() {
     })
 
     //status update of an pending request HR
-    app.patch('/status-update/:id', async (req, res) => {
+    app.patch('/status-update/:id', verifyToken, verifyHR, async (req, res) => {
       const id = req.params.id;
       // console.log(id)
       const query = { _id: new ObjectId(id) };
@@ -547,7 +559,7 @@ async function run() {
     })
 
     //reject asset HR 
-    app.delete('/reject-asset/:id', async (req, res) => {
+    app.delete('/reject-asset/:id', verifyToken, verifyHR, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await requestCollection.deleteOne(query);
@@ -623,9 +635,9 @@ async function run() {
     })
 
     //pending to be employee under an HR
-    app.get('/pending-employee', async (req, res) => {
+    app.get('/pending-employee', verifyToken, verifyHR, async (req, res) => {
       const { page = 1, limit = 10 } = req.query;
-      console.log(page, limit);
+      // console.log(page, limit);
       const skip = (page - 1) * limit;
       const query = {
         status: 'pending',
@@ -636,7 +648,7 @@ async function run() {
     })
 
     //package limit
-    app.get('/package-limit/:email', async (req, res) => {
+    app.get('/package-limit/:email', verifyToken, verifyHR, async (req, res) => {
       const email = req.params.email;
       const query = { email };
       const result = await userCollection.findOne(query);
@@ -645,12 +657,12 @@ async function run() {
 
 
     //add selected employee under a hr
-    app.put('/add-selected-employee/:email', async (req, res) => {
+    app.put('/add-selected-employee/:email', verifyToken, verifyHR, async (req, res) => {
       const email = req.params.email;
 
       const { selectedEmployee: employeeList, newLimit } = req.body;
       // const employeeList = ['hello@gmail.com', 'iam@gmail.com'];
-      console.log(employeeList, newLimit)
+      // console.log(employeeList, newLimit)
       const query = { HRemail: email };
 
       const options = { upsert: true }
@@ -686,7 +698,7 @@ async function run() {
     })
 
     //add an employee
-    app.put('/add-an-employee/:email', async (req, res) => {
+    app.put('/add-an-employee/:email', verifyToken, verifyHR, async (req, res) => {
       const email = req.params.email;
       const user = req.body;
       // console.log(email);
@@ -722,7 +734,7 @@ async function run() {
     })
 
     //employee count under an hr
-    app.get('/employee-under-hr/:email', async (req, res) => {
+    app.get('/employee-under-hr/:email', verifyToken, verifyHR, async (req, res) => {
       const email = req.params.email;
       const query = { HRemail: email };
       const result = await EmployeeUnderHrCollection.findOne(query);
@@ -730,7 +742,7 @@ async function run() {
     })
 
     //pendingemployee count 
-    app.get('/pending-employee-count', async (req, res) => {
+    app.get('/pending-employee-count', verifyToken, verifyHR, async (req, res) => {
       const query = { status: 'pending', role: 'employee' }
       const result = await userCollection.countDocuments(query);
       res.send({ count: result })
@@ -739,6 +751,7 @@ async function run() {
     //my-employee-list
     app.get('/my-employee-list/:email', async (req, res) => {
       const email = req.params.email;
+      console.log(email)
       const { page = 1, limit = 10 } = req.query;
       // console.log(page, limit);
       const skip = (page - 1) * limit;
@@ -836,7 +849,7 @@ async function run() {
     })
 
     //limit increase
-    app.patch('/update-limit-count/:email', async (req, res) => {
+    app.patch('/update-limit-count/:email', verifyToken, verifyHR, async (req, res) => {
       const email = req.params.email;
       const { incrementLimit } = req.body;
       const query = { email };
@@ -853,7 +866,7 @@ async function run() {
     //hrinfo for an employee
     app.get('/hr-info-for-me/:email', async(req, res) => {
       const email = req.params.email;
-      console.log(email)
+      // console.log(email)
       const hr = await userCollection.findOne({email});
       if(!hr?.HR) return;
       
@@ -866,6 +879,13 @@ async function run() {
       const email = req.params.email;
       
       const result = await hrCollection.findOne({email});
+      res.send(result);
+    })
+
+    //user info
+    app.get('/my-info/:email', async(req, res) => {
+      const email = req.params.email;
+      const result = await userCollection.findOne({email});
       res.send(result);
     })
 
