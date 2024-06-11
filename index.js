@@ -85,6 +85,8 @@ async function run() {
       next();
     }
 
+    
+
     app.put('/user', async (req, res) => {
       const user = req.body;
       const query = { email: user?.email };
@@ -96,7 +98,7 @@ async function run() {
     })
 
 
-    app.put('/username-image-update', async (req, res) => {
+    app.put('/username-image-update', verifyToken, async (req, res) => {
       const user = req.body;
       const query = { email: user?.email };
       const doc = {
@@ -195,7 +197,7 @@ async function run() {
     })
 
     //employee
-    app.get('/assetsCountForEmployee/:email', async (req, res) => {
+    app.get('/assetsCountForEmployee/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const hr = await userCollection.findOne({ email });
       // console.log(hr.HRemail)
@@ -235,7 +237,7 @@ async function run() {
       }
     })
 
-    app.get('/my-all-requested-assets-count/:email', async (req, res) => {
+    app.get('/my-all-requested-assets-count/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       // console.log('email = ', email)
       const { search, returnOrNot, sortData, available } = req.query;
@@ -378,7 +380,7 @@ async function run() {
 
 
 
-    app.get('/assetsForEmployee/:email', async (req, res) => {
+    app.get('/assetsForEmployee/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
 
       //TODO
@@ -417,7 +419,7 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/my-all-requested-assets/:email', async (req, res) => {
+    app.get('/my-all-requested-assets/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
 
 
@@ -465,7 +467,7 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/asset/:id', async (req, res) => {
+    app.get('/asset/:id', verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await assetsCollection.findOne(query);
@@ -488,21 +490,21 @@ async function run() {
 
     })
 
-    app.post('/asset-request', async (req, res) => {
+    app.post('/asset-request', verifyToken, async (req, res) => {
       const reqInfo = req.body;
 
       const result = await requestCollection.insertOne(reqInfo);
       res.send(result)
     })
 
-    app.get('/my-pending-request/:email', async (req, res) => {
+    app.get('/my-pending-request/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { email, Request: 'pending' };
       const result = await requestCollection.find(query).toArray();
       res.send(result);
     })
 
-    app.get('/monthly-request/:email', async (req, res) => {
+    app.get('/monthly-request/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
       const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59, 999);
@@ -518,7 +520,7 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/hr-info/:email', async (req, res) => {
+    app.get('/hr-info/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { email };
       const result = await requestCollection.findOne(query);
@@ -567,7 +569,7 @@ async function run() {
     })
 
     //increase request for employee
-    app.patch('/increase-request/:id', async (req, res) => {
+    app.patch('/increase-request/:id',  async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const doc = {
@@ -580,7 +582,7 @@ async function run() {
     })
 
     //top 4 requested item for hr
-    app.get('/top-four-requested-items/:email', async (req, res) => {
+    app.get('/top-four-requested-items/:email', verifyToken, verifyHR, async (req, res) => {
       const email = req.params.email;
       const query = { email };
       // console.log(email)
@@ -589,7 +591,7 @@ async function run() {
     })
 
     //five pending request for hr
-    app.get('/five-pending-request/:email', async (req, res) => {
+    app.get('/five-pending-request/:email', verifyToken, verifyHR, async (req, res) => {
       const email = req.params.email;
       const query = { HrEmail: email };
       // console.log(email)
@@ -598,7 +600,7 @@ async function run() {
     })
 
     //limited stocks item for hr
-    app.get('/limited-stocks/:email', async (req, res) => {
+    app.get('/limited-stocks/:email', verifyToken, verifyHR, async (req, res) => {
       const email = req.params.email;
       const query = {
         email: email,
@@ -611,7 +613,7 @@ async function run() {
     })
 
     //chart returnable items
-    app.get('/returnable/:email', async (req, res) => {
+    app.get('/returnable/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = {
         HrEmail: email,
@@ -624,7 +626,7 @@ async function run() {
     })
 
     //nonreturnabel
-    app.get('/non-returnable/:email', async (req, res) => {
+    app.get('/non-returnable/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = {
         HrEmail: email,
@@ -774,14 +776,14 @@ async function run() {
     })
 
     //my employee count
-    app.get('/my-employee-count/:email', async (req, res) => {
+    app.get('/my-employee-count/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const result = await EmployeeUnderHrCollection.findOne({ HRemail: email });
       res.send(result)
     })
 
     //delete from my team
-    app.put('/remove-from-team/:email', async (req, res) => {
+    app.put('/remove-from-team/:email', verifyToken, verifyHR, async (req, res) => {
       const email = req.params.email;
       const { userEmail } = req.body;
       // console.log(email, userEmail);
@@ -802,14 +804,14 @@ async function run() {
     })
 
     //get-user-info
-    app.get('/get-user-info/:email', async (req, res) => {
+    app.get('/get-user-info/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const result = await userCollection.findOne({ email });
       res.send(result)
     })
 
     //update profile
-    app.put('/profile-update/:email', async (req, res) => {
+    app.put('/profile-update/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const { name, image } = req.body;
       const query = { email };
@@ -824,7 +826,7 @@ async function run() {
     })
 
     //myTeam members employee
-    app.get('/my-team-members/:email', async (req, res) => {
+    app.get('/my-team-members/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const { page = 1, limit = 10 } = req.query;
       const skip = (page - 1) * limit;
@@ -835,7 +837,7 @@ async function run() {
     })
 
     //myTeam count
-    app.get('/my-team-count/:email', async (req, res) => {
+    app.get('/my-team-count/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const user = await userCollection.findOne({ email });
       const result = await EmployeeUnderHrCollection.findOne({ HRemail: user?.HR });
@@ -864,7 +866,7 @@ async function run() {
 
 
     //hrinfo for an employee
-    app.get('/hr-info-for-me/:email', async(req, res) => {
+    app.get('/hr-info-for-me/:email', verifyToken, async(req, res) => {
       const email = req.params.email;
       // console.log(email)
       const hr = await userCollection.findOne({email});
@@ -875,7 +877,7 @@ async function run() {
     })
 
     //hr-info
-    app.get('/hr-information/:email', async(req, res) => {
+    app.get('/hr-information/:email', verifyToken, async(req, res) => {
       const email = req.params.email;
       
       const result = await hrCollection.findOne({email});
@@ -883,7 +885,7 @@ async function run() {
     })
 
     //user info
-    app.get('/my-info/:email', async(req, res) => {
+    app.get('/my-info/:email', verifyToken, async(req, res) => {
       const email = req.params.email;
       const result = await userCollection.findOne({email});
       res.send(result);
