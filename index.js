@@ -67,6 +67,10 @@ async function run() {
     const EmployeeUnderHrCollection = client.db('Asset-Flow').collection('EmployeeUnderHr');
     const requestCollection = client.db('Asset-Flow').collection('RequestAssets');
     const noticetCollection = client.db('Asset-Flow').collection('Notices');
+    const previousNotificationCount = client.db('Asset-Flow').collection('previousNotificationCount');
+    const currentNotificationCount = client.db('Asset-Flow').collection('currentNotificationCount');
+    const notificationCollection = client.db('Asset-Flow').collection('notification');
+
 
     app.post('/jwt', async (req, res) => {
       const user = req.body;
@@ -888,6 +892,52 @@ async function run() {
     app.get('/my-info/:email', verifyToken, async(req, res) => {
       const email = req.params.email;
       const result = await userCollection.findOne({email});
+      res.send(result);
+    })
+
+    //notification
+    app.post('/notification', async(req, res) => {
+      const data = req.body;
+      const add = await notificationCollection.insertOne(data);
+      const query = {email : data.email};
+      const options = {upsert : true};
+      const doc = {
+        $inc : {
+          nCount : 1
+        }
+      }
+      const result = await currentNotificationCount.updateOne(query, doc, options);
+      
+      res.send(result);
+    })
+
+
+    app.get('/previous-notification/:email', async(req, res) => {
+      const email= req.params.email;
+      const result = await previousNotificationCount.findOne({email});
+      res.send(result);
+    })
+    app.get('/current-notification/:email', async(req, res) => {
+      const email= req.params.email;
+      const result = await currentNotificationCount.findOne({email});
+      res.send(result);
+    })
+
+    app.get('/notification-data/:email', async(req, res) => {
+      const email= req.params.email;
+      const result = await notificationCollection.find({email}).sort({ _id: -1 }).toArray();
+      res.send(result);
+    })
+
+    app.put('/update-notification-count', async(req, res) => {
+      const data = req.body;
+      // console.log(data);
+      const query = {email : data.email};
+      const options = {upsert:true};
+      const doc = {
+        $set : {...data}
+      }
+      const result = await previousNotificationCount.updateOne(query, doc, options);
       res.send(result);
     })
 
