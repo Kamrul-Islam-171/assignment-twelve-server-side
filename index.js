@@ -102,8 +102,9 @@ async function run() {
     })
 
 
-    app.put('/username-image-update', verifyToken, async (req, res) => {
+    app.put('/username-image-update', async (req, res) => {
       const user = req.body;
+      // console.log(user)
       const query = { email: user?.email };
       const doc = {
         $set: {
@@ -360,7 +361,7 @@ async function run() {
 
 
     //payment intend
-    app.post("/create-payment-intent", verifyToken, async (req, res) => {
+    app.post("/create-payment-intent", async (req, res) => {
       const price = req.body.price;
       const priceInCent = parseFloat(price) * 100;
       // console.log(priceInCent)
@@ -397,6 +398,9 @@ async function run() {
 
       if (hr?.HR) {
         query.email = hr.HR
+      }
+      else {
+        return res.status(403).send({message : 'forbidden access'})
       }
 
       if (search) {
@@ -757,7 +761,7 @@ async function run() {
     //my-employee-list
     app.get('/my-employee-list/:email', async (req, res) => {
       const email = req.params.email;
-      console.log(email)
+      // console.log(email)
       const { page = 1, limit = 10 } = req.query;
       // console.log(page, limit);
       const skip = (page - 1) * limit;
@@ -967,11 +971,19 @@ async function run() {
       res.send(result)
     })
 
+    app.delete('/cancel-request/:id', verifyToken, async(req, res) => {
+      const id = req.params.id;
+      // console.log(id)
+      const query = {_id : new ObjectId(id)};
+      const result = await requestCollection.deleteOne(query);
+      res.send(result);
+    })
 
 
 
 
-    await client.db("admin").command({ ping: 1 });
+
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
