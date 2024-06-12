@@ -520,7 +520,7 @@ async function run() {
           $lte: endOfMonth.toISOString(),
         },
       };
-      const result = await requestCollection.find(query).toArray();
+      const result = await requestCollection.find(query).sort({_id:-1}).toArray();
       res.send(result);
     })
 
