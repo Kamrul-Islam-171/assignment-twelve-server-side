@@ -13,7 +13,7 @@ const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 app.use(express.json());
 app.use(cors({
-  origin: ['http://localhost:5173'],
+  origin: ['http://localhost:5173', 'https://assignment-twelve-5f184.web.app', 'https://assignment-twelve-5f184.firebaseapp.com', 'https://comforting-kashata-2b6a54.netlify.app'],
   credentials: true,
 
 }))
